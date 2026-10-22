@@ -1,0 +1,33 @@
+name: status-checks
+# Scheduled uptime checks for the Hepherus status/alert page (D-2208). Writes checks.json and commits any change.
+# GitHub's schedule is best-effort and may lag several minutes (an accepted limit of the no-paid-service choice).
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: status-checks
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Run checks
+        run: python3 check.py
+      - name: Commit if changed
+        run: |
+          if ! git diff --quiet -- checks.json; then
+            git config user.name "hepherus-status-bot"
+            git config user.email "status-bot@users.noreply.github.com"
+            git add checks.json
+            git commit -m "status: update checks.json"
+            git push
+          else
+            echo "no change"
+          fi
