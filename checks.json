@@ -1,10 +1,25 @@
 {
-  "checked_at": "2026-10-22T00:00:00Z",
+  "checked_at": "2026-10-22T20:21:40Z",
   "services": [
-    { "name": "App (app.hepherus.com)", "up": null },
-    { "name": "Backend (api.hepherus.com)", "up": null },
-    { "name": "Admin (admin.hepherus.com)", "up": null },
-    { "name": "Connector", "up": null },
-    { "name": "Sign-in page", "up": null }
+    {
+      "name": "App (app.hepherus.com)",
+      "up": true
+    },
+    {
+      "name": "Backend (api.hepherus.com)",
+      "up": true
+    },
+    {
+      "name": "Admin (admin.hepherus.com)",
+      "up": true
+    },
+    {
+      "name": "Connector",
+      "up": true
+    },
+    {
+      "name": "Sign-in page",
+      "up": true
+    }
   ]
 }
