@@ -1,0 +1,10 @@
+{
+  "checked_at": "2026-10-22T00:00:00Z",
+  "services": [
+    { "name": "App (app.hepherus.com)", "up": null },
+    { "name": "Backend (api.hepherus.com)", "up": null },
+    { "name": "Admin (admin.hepherus.com)", "up": null },
+    { "name": "Connector", "up": null },
+    { "name": "Sign-in page", "up": null }
+  ]
+}
