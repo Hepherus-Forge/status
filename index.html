@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Hepherus status</title>
+<style>
+  :root{--bg:#fff;--fg:#141414;--muted:#5b5b5b;--card:#f6f6f7;--line:#e4e4e7;--up:#157f3b;--down:#b42318;--warn:#b25e00;}
+  @media (prefers-color-scheme:dark){:root{--bg:#0f0f11;--fg:#f2f2f3;--muted:#a1a1aa;--card:#18181b;--line:#27272a;--up:#4ade80;--down:#f87171;--warn:#fbbf24;}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:16px}
+  .wrap{max-width:640px;margin:0 auto}
+  h1{font-size:20px;margin:8px 0 2px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}
+  .banner{border-left:4px solid var(--warn)}
+  .banner.ok{border-left-color:var(--up)}
+  .banner h2{margin:0 0 6px;font-size:17px}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:middle}
+  .up .dot{background:var(--up)} .down .dot{background:var(--down)} .unknown .dot{background:var(--muted)}
+  .up b{color:var(--up)} .down b{color:var(--down)}
+  .k{color:var(--muted);font-size:13px}
+  a{color:inherit}
+  .foot{color:var(--muted);font-size:12px;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Hepherus status</h1>
+  <div class="sub" id="now">Loading…</div>
+
+  <div class="card banner" id="incident">
+    <h2 id="inc-title">Loading the latest update…</h2>
+    <div id="inc-msg"></div>
+    <div class="k" id="inc-data" style="margin-top:8px"></div>
+    <div class="k" id="inc-do" style="margin-top:4px"></div>
+    <div class="k" id="inc-time" style="margin-top:8px"></div>
+  </div>
+
+  <h3 style="margin:18px 0 0;font-size:14px">Systems</h3>
+  <div class="card" id="checks"><div class="k">Loading checks…</div></div>
+
+  <div class="foot">
+    This page is hosted outside our main host, so it stays up when the app is down. No tracking.
+    If your account is affected we will email you directly.
+  </div>
+</div>
+<script>
+const esc = s => String(s==null?"":s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const fmt = t => { try{return new Date(t).toLocaleString();}catch(e){return esc(t);} };
+
+async function load(){
+  document.getElementById('now').textContent = 'As of ' + new Date().toLocaleString();
+  // latest incident (edited from the GitHub phone app)
+  try{
+    const inc = await (await fetch('incidents.json?'+Date.now())).json();
+    const top = (inc.incidents||[])[0];
+    const el = document.getElementById('incident');
+    if(top && top.status && top.status!=='operational'){
+      el.classList.remove('ok');
+      document.getElementById('inc-title').textContent = top.title || 'We are looking into an issue';
+      document.getElementById('inc-msg').innerHTML = esc(top.message||'');
+      document.getElementById('inc-data').innerHTML = '<b>Is my data affected?</b> ' + esc(top.data_affected||'We are still checking.');
+      document.getElementById('inc-do').innerHTML = '<b>What to do:</b> ' + esc(top.what_to_do||'Nothing right now.');
+      document.getElementById('inc-time').textContent = 'Updated ' + fmt(top.updated);
+    }else{
+      el.classList.add('ok');
+      document.getElementById('inc-title').textContent = 'All systems operational';
+      document.getElementById('inc-msg').textContent = top && top.message ? top.message : 'No incidents reported.';
+      document.getElementById('inc-data').textContent = '';
+      document.getElementById('inc-do').textContent = '';
+      document.getElementById('inc-time').textContent = top && top.updated ? 'Updated ' + fmt(top.updated) : '';
+    }
+  }catch(e){ document.getElementById('inc-title').textContent = 'Status update unavailable right now.'; }
+
+  // automatic checks (written by the scheduled GitHub Actions workflow)
+  try{
+    const ch = await (await fetch('checks.json?'+Date.now())).json();
+    const box = document.getElementById('checks'); box.innerHTML='';
+    (ch.services||[]).forEach(s=>{
+      const cls = s.up===true?'up':(s.up===false?'down':'unknown');
+      const label = s.up===true?'Operational':(s.up===false?'Down':'Unknown');
+      box.insertAdjacentHTML('beforeend',
+        `<div class="row ${cls}"><span><span class="dot"></span>${esc(s.name)}</span><b>${label}</b></div>`);
+    });
+    box.insertAdjacentHTML('beforeend', `<div class="k" style="margin-top:8px">Checks last ran ${fmt(ch.checked_at)}</div>`);
+  }catch(e){ document.getElementById('checks').innerHTML='<div class="k">Checks unavailable right now.</div>'; }
+}
+load();
+</script>
+</body>
+</html>
