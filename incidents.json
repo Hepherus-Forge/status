@@ -1,0 +1,12 @@
+{
+  "incidents": [
+    {
+      "status": "operational",
+      "title": "All systems operational",
+      "message": "No incidents reported.",
+      "data_affected": "",
+      "what_to_do": "",
+      "updated": "2026-10-22T00:00:00Z"
+    }
+  ]
+}
