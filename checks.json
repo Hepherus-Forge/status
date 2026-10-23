@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-10-23T17:19:25Z",
+  "checked_at": "2026-10-23T18:45:54Z",
   "services": [
     {
       "name": "App (app.hepherus.com)",
@@ -14,12 +14,20 @@
       "up": true
     },
     {
+      "name": "Supabase (database & auth)",
+      "up": true
+    },
+    {
       "name": "Connector",
       "up": true
     },
     {
       "name": "Sign-in page",
       "up": true
+    },
+    {
+      "name": "Decrypt service (KMS unwrap)",
+      "up": null
     }
   ]
 }
