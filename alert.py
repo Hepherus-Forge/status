@@ -1,34 +1,39 @@
 #!/usr/bin/env python3
 """Email alerting for the Hepherus status page (runs in GitHub Actions right after check.py). Stdlib only.
 
-Reads the freshly-written checks.json, maintains alert_state.json (a per-service consecutive-failure counter
-and whether an alert is currently open), and emails Maestro via the Resend HTTP API:
+Emails Maestro via the Resend HTTP API on 2 CONSECUTIVE failures (debounces a cold start / transient) and
+again on recovery, for BOTH:
+  - the public customer components from checks.json ("Hepherus app", "Sign-in", "Agents", "Connections"), and
+  - the internal-only surfaces from internal.json (an operator console; the database/auth health) — which are
+    NOT shown on the public page (Maestro's rule: keep checking them, report them only by email).
 
-  - DOWN alert: sent once a service reaches 2 CONSECUTIVE failures (debounces a single cold-start/transient
-    timeout, per the T810 §1b spec and Resilience_Brief §5.4). Not re-sent while the alert stays open.
-  - RECOVERY: sent once a previously-alerting service is back up.
+State is kept in alert_state.json (a per-key consecutive-failure counter + whether an alert is open). Public
+components are keyed by their public name; internal surfaces are keyed by an OPAQUE id (i1/i2) so the committed
+alert_state.json never contains an internal name. The human label for an internal surface is used ONLY in the
+private email body, and comes from internal.json (which is git-ignored and never committed).
 
-A check reporting up==null (Unknown, e.g. decrypt_path before INTERNAL_API_SECRET is configured) is treated
-as "no signal": it neither increments the failure counter nor clears an open alert.
+A check reporting up==None (Unknown) is "no signal": it neither increments the counter nor clears an open alert.
 
-Secrets/vars it reads from the environment (GitHub Actions secrets/vars; nothing is hardcoded):
-  RESEND_API_KEY   - Resend API key (required to actually send; absent => state still tracked, no send)
+Secrets/vars from the environment (GitHub Actions secrets; nothing hardcoded):
+  RESEND_API_KEY   - a SEND-ONLY Resend key (absent => state still tracked, no send)
   ALERT_EMAIL_TO   - Maestro's email (required to send)
-  ALERT_EMAIL_FROM - verified Resend sender (default: alerts@hepherus.com)
+  ALERT_EMAIL_FROM - a verified Resend sender on the hepherus.com domain (default: alerts@hepherus.com)
 
-Exit code is always 0 on a handled path: a missing secret or a Resend error must not fail the checks job
-(the page still updates). Send failures are printed.
+Exit code is always 0 on a handled path: a missing secret or a Resend error must not fail the checks job.
 """
-import json, os, urllib.request, urllib.error
+import json
+import os
+import urllib.request
 
 STATE_FILE = "alert_state.json"
 CHECKS_FILE = "checks.json"
+INTERNAL_FILE = "internal.json"
 FAIL_THRESHOLD = 2
 RESEND_URL = "https://api.resend.com/emails"
 
 
 def load_json(path, default):
-    """Read JSON from path, returning default on any error. Input: path (str), default. Returns: parsed obj or default."""
+    """Read JSON from path, returning default on any error. Input: path (str), default. Returns: obj or default."""
     try:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
@@ -61,40 +66,55 @@ def send_email(subject, text):
         return False
 
 
+def evaluate(state, key, display, up, checked_at):
+    """Update the alert state for one service and email on 2 consecutive fails / on recovery.
+
+    Input: state (dict, mutated in place); key (str, the state key — a public name or an opaque internal id);
+    display (str, the human name used in the email); up (bool|None); checked_at (str). Returns: None.
+    """
+    st = state.setdefault(key, {"fails": 0, "alerted": False})
+    if up is None:                        # Unknown: no signal — hold counters/flags as-is
+        return
+    if up is False:
+        st["fails"] += 1
+        if st["fails"] >= FAIL_THRESHOLD and not st["alerted"]:
+            sent = send_email(
+                f"[Hepherus] DOWN: {display}",
+                f"{display} has failed {st['fails']} consecutive status checks.\n"
+                f"Last check: {checked_at}\n\n"
+                f"Status page: https://status.hepherus.com/\n"
+                f"This is an automated alert from the Hepherus status checker.")
+            st["alerted"] = True          # mark open even if the send no-op'd, so we don't spam each run
+            st["alert_sent"] = bool(sent)
+    else:                                 # up is True
+        if st["alerted"]:
+            send_email(
+                f"[Hepherus] RECOVERED: {display}",
+                f"{display} is back up as of {checked_at}.\n\n"
+                f"Status page: https://status.hepherus.com/")
+        st["fails"] = 0
+        st["alerted"] = False
+        st.pop("alert_sent", None)
+
+
 def main():
-    """Compare the latest checks against prior state, email on 2 consecutive fails / on recovery, persist state."""
+    """Compare the latest public + internal checks against prior state, email, and persist state."""
     checks = load_json(CHECKS_FILE, {"services": [], "checked_at": ""})
+    internal = load_json(INTERNAL_FILE, {"services": [], "checked_at": ""})
     state = load_json(STATE_FILE, {})
-    checked_at = checks.get("checked_at", "")
+    checked_at = checks.get("checked_at", "") or internal.get("checked_at", "")
 
+    # Public customer components: state key == display name (public, safe to commit).
     for svc in checks.get("services", []):
-        name, up = svc.get("name"), svc.get("up")
-        if not name:
-            continue
-        st = state.setdefault(name, {"fails": 0, "alerted": False})
+        name = svc.get("name")
+        if name:
+            evaluate(state, name, name, svc.get("up"), checked_at)
 
-        if up is None:                    # Unknown: no signal — hold counters/flags as-is
-            continue
-        if up is False:
-            st["fails"] += 1
-            if st["fails"] >= FAIL_THRESHOLD and not st["alerted"]:
-                sent = send_email(
-                    f"[Hepherus] DOWN: {name}",
-                    f"{name} has failed {st['fails']} consecutive status checks.\n"
-                    f"Last check: {checked_at}\n\n"
-                    f"Status page: https://status.hepherus.com/\n"
-                    f"This is an automated alert from the Hepherus status checker.")
-                st["alerted"] = True      # mark open even if the send no-op'd, so we don't spam each run
-                st["alert_sent"] = bool(sent)
-        else:                             # up is True
-            if st["alerted"]:
-                send_email(
-                    f"[Hepherus] RECOVERED: {name}",
-                    f"{name} is back up as of {checked_at}.\n\n"
-                    f"Status page: https://status.hepherus.com/")
-            st["fails"] = 0
-            st["alerted"] = False
-            st.pop("alert_sent", None)
+    # Internal-only surfaces: state key == opaque id (committed); display label stays in the private email.
+    for svc in internal.get("services", []):
+        sid = svc.get("id")
+        if sid:
+            evaluate(state, sid, svc.get("label", sid), svc.get("up"), checked_at)
 
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)

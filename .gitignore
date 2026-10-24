@@ -1,0 +1,5 @@
+# Ephemeral internal check results written by check.py and read by alert.py within the same job run.
+# It may carry internal-only labels, so it is NEVER committed to this public repo.
+internal.json
+__pycache__/
+*.pyc

@@ -1,30 +1,8 @@
 {
-  "App (app.hepherus.com)": {
-    "fails": 0,
-    "alerted": false
-  },
-  "Backend (api.hepherus.com)": {
-    "fails": 0,
-    "alerted": false
-  },
-  "Admin (admin.hepherus.com)": {
-    "fails": 0,
-    "alerted": false
-  },
-  "Supabase (database & auth)": {
-    "fails": 0,
-    "alerted": false
-  },
-  "Connector": {
-    "fails": 0,
-    "alerted": false
-  },
-  "Sign-in page": {
-    "fails": 0,
-    "alerted": false
-  },
-  "Decrypt service (KMS unwrap)": {
-    "fails": 0,
-    "alerted": false
-  }
+  "Hepherus app": { "fails": 0, "alerted": false },
+  "Sign-in": { "fails": 0, "alerted": false },
+  "Agents": { "fails": 0, "alerted": false },
+  "Connections": { "fails": 0, "alerted": false },
+  "i1": { "fails": 0, "alerted": false },
+  "i2": { "fails": 0, "alerted": false }
 }

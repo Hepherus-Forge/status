@@ -22,7 +22,8 @@ jobs:
       - uses: actions/checkout@v4.2.2
       - name: Run checks
         env:
-          INTERNAL_API_SECRET: ${{ secrets.INTERNAL_API_SECRET }}
+          DB_HEALTH_URL: ${{ secrets.DB_HEALTH_URL }}
+          ADMIN_HEALTH_URL: ${{ secrets.ADMIN_HEALTH_URL }}
         run: python3 check.py
       - name: Evaluate alerts (email on 2 consecutive failures / recovery)
         env:

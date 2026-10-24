@@ -1,33 +1,21 @@
 {
-  "checked_at": "2026-10-24T07:00:31Z",
+  "checked_at": "2026-10-24T11:13:06Z",
   "services": [
     {
-      "name": "App (app.hepherus.com)",
+      "name": "Hepherus app",
       "up": true
     },
     {
-      "name": "Backend (api.hepherus.com)",
+      "name": "Sign-in",
       "up": true
     },
     {
-      "name": "Admin (admin.hepherus.com)",
+      "name": "Agents",
       "up": true
     },
     {
-      "name": "Supabase (database & auth)",
+      "name": "Connections",
       "up": true
-    },
-    {
-      "name": "Connector",
-      "up": true
-    },
-    {
-      "name": "Sign-in page",
-      "up": true
-    },
-    {
-      "name": "Decrypt service (KMS unwrap)",
-      "up": null
     }
   ]
 }

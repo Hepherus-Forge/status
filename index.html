@@ -80,13 +80,26 @@ async function load(){
   try{
     const ch = await (await fetch('checks.json?'+Date.now())).json();
     const box = document.getElementById('checks'); box.innerHTML='';
+    // Staleness guard: the schedule is best-effort and can lag, so if the data is older than STALE_MIN
+    // minutes we must NOT keep showing "Operational" — every component becomes "Status unknown".
+    const STALE_MIN = 30;
+    const ranMs = Date.parse(ch.checked_at);
+    const ageMin = isFinite(ranMs) ? (Date.now()-ranMs)/60000 : Infinity;
+    const stale = ageMin > STALE_MIN;
+    if(stale){
+      box.insertAdjacentHTML('beforeend',
+        `<div class="row unknown"><span><span class="dot"></span>Status check</span><b>Status unknown</b></div>`);
+    }
     (ch.services||[]).forEach(s=>{
-      const cls = s.up===true?'up':(s.up===false?'down':'unknown');
-      const label = s.up===true?'Operational':(s.up===false?'Down':'Unknown');
+      const up = stale ? null : s.up;
+      const cls = up===true?'up':(up===false?'down':'unknown');
+      const label = up===true?'Operational':(up===false?'Down':'Status unknown');
       box.insertAdjacentHTML('beforeend',
         `<div class="row ${cls}"><span><span class="dot"></span>${esc(s.name)}</span><b>${label}</b></div>`);
     });
-    box.insertAdjacentHTML('beforeend', `<div class="k" style="margin-top:8px">Checks last ran ${fmt(ch.checked_at)}</div>`);
+    const ranLine = isFinite(ranMs) ? `Checks last ran ${fmt(ch.checked_at)}` : 'Checks have not run yet';
+    const staleNote = stale ? ' — data is more than '+STALE_MIN+' minutes old, so status is shown as unknown' : '';
+    box.insertAdjacentHTML('beforeend', `<div class="k" style="margin-top:8px">${esc(ranLine+staleNote)}</div>`);
   }catch(e){ document.getElementById('checks').innerHTML='<div class="k">Checks unavailable right now.</div>'; }
 }
 load();
