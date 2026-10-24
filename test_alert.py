@@ -7,6 +7,7 @@ emails. Uses the same secrets/sender as alert.py. Exit 0 always (a mail error mu
 import json
 import os
 import urllib.request
+import urllib.error
 
 RESEND_URL = "https://api.resend.com/emails"
 
@@ -30,6 +31,12 @@ def main():
     try:
         with urllib.request.urlopen(req, timeout=15) as r:
             print(f"[test-alert] resend status {r.status} (TEST email sent to the configured recipient)")
+    except urllib.error.HTTPError as e:  # print the API error body so the cause is actionable (no secrets in it)
+        try:
+            body = e.read().decode("utf-8", "replace")
+        except Exception:
+            body = "(no body)"
+        print(f"[test-alert] resend HTTP {e.code}; body: {body}")
     except Exception as e:  # never fail the job on a mail error
         print(f"[test-alert] resend send failed: {type(e).__name__}: {e}")
 
