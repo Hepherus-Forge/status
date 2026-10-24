@@ -6,7 +6,12 @@ name: status-checks
 on:
   schedule:
     - cron: "*/5 * * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      send_test_alert:
+        description: "Send ONE clearly-marked TEST alert email (proves the Resend path), then run the checks"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -20,6 +25,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.2.2
+      - name: Send a TEST alert email (manual dispatch only)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.send_test_alert }}
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+          ALERT_EMAIL_FROM: ${{ secrets.ALERT_EMAIL_FROM }}
+        run: python3 test_alert.py
       - name: Run checks
         env:
           DB_HEALTH_URL: ${{ secrets.DB_HEALTH_URL }}

@@ -116,6 +116,9 @@ def main():
         f.write("\n")
 
     print(json.dumps(out, indent=2))
+    # OPAQUE internal summary to the job log only (ids + up/down, NO labels, NO urls) — lets an operator
+    # confirm the internal checks resolved (not "unknown") without leaking what they are.
+    print("internal:", json.dumps([{"id": s["id"], "up": s["up"]} for s in internal["services"]]))
 
 
 if __name__ == "__main__":
