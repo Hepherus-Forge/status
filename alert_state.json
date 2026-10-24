@@ -1,8 +1,26 @@
 {
-  "Hepherus app": { "fails": 0, "alerted": false },
-  "Sign-in": { "fails": 0, "alerted": false },
-  "Agents": { "fails": 0, "alerted": false },
-  "Connections": { "fails": 0, "alerted": false },
-  "i1": { "fails": 0, "alerted": false },
-  "i2": { "fails": 0, "alerted": false }
+  "Hepherus app": {
+    "fails": 0,
+    "alerted": false
+  },
+  "Sign-in": {
+    "fails": 0,
+    "alerted": false
+  },
+  "Agents": {
+    "fails": 0,
+    "alerted": false
+  },
+  "Connections": {
+    "fails": 0,
+    "alerted": false
+  },
+  "i1": {
+    "fails": 0,
+    "alerted": false
+  },
+  "i2": {
+    "fails": 0,
+    "alerted": false
+  }
 }
