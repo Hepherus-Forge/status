@@ -27,7 +27,8 @@ def main():
     payload = json.dumps({"from": from_addr, "to": [to_addr], "subject": subject, "text": text}).encode("utf-8")
     req = urllib.request.Request(
         RESEND_URL, data=payload, method="POST",
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json",
+                 "User-Agent": "hepherus-status/1.0"})  # a real UA — Cloudflare 1010-bans the default urllib UA
     try:
         with urllib.request.urlopen(req, timeout=15) as r:
             print(f"[test-alert] resend status {r.status} (TEST email sent to the configured recipient)")
