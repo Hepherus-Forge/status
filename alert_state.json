@@ -12,7 +12,7 @@
     "alerted": false
   },
   "Connections": {
-    "fails": 2,
+    "fails": 3,
     "alerted": true,
     "alert_sent": true
   },
