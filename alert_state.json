@@ -12,9 +12,8 @@
     "alerted": false
   },
   "Connections": {
-    "fails": 53,
-    "alerted": true,
-    "alert_sent": true
+    "fails": 0,
+    "alerted": false
   },
   "i1": {
     "fails": 0,
